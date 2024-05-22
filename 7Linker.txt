@@ -1,0 +1,120 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
+
+class Linker {
+    static int addr = 1000;
+    static Map<String, Integer> sizes = Map.of("int", 4, "float", 4, "char", 2, "long", 8, "double", 8);
+
+    static class Node {
+        String identifier, dataType;
+        int size, addr;
+
+        Node(String identifier, String dataType, int size, int addr) {
+            this.identifier = identifier;
+            this.dataType = dataType;
+            this.size = size;
+            this.addr = addr;
+        }
+    }
+
+    List<Node> s1 = new ArrayList<>(), e1 = new ArrayList<>(), s2 = new ArrayList<>(), e2 = new ArrayList<>(), gvt = new ArrayList<>();
+
+    public void read(String[] array, List<Node> list, boolean isExtern) {
+        String dataType = isExtern ? array[1] : array[0];
+        int address = isExtern ? -1 : addr;
+
+        for (int i = isExtern ? 2 : 1; i < array.length; i++) {
+            String identifier = array[i];
+            int num = identifier.contains("[") ? Integer.parseInt(identifier.substring(identifier.indexOf('[') + 1, identifier.indexOf(']'))) : 1;
+            Integer sizeValue = sizes.get(dataType);
+            if (sizeValue == null) {
+                System.out.println("Unknown data type: " + dataType);
+                continue;
+            }
+            int size = sizeValue * num;
+            list.add(new Node(identifier, dataType, size, address));
+            if (!isExtern) addr += size;
+        }
+    }
+
+    public void readFile(Scanner scanner, boolean isFirstFile) {
+        List<Node> sbt = isFirstFile ? s1 : s2;
+        List<Node> et = isFirstFile ? e1 : e2;
+
+        while (scanner.hasNextLine()) {
+            String data = scanner.nextLine();
+            if (!data.matches("^\\s*(#.*|main\\(\\)|\\{$|}$)")) {
+                String[] tokens = data.split("[ ,;]");
+                read(tokens, tokens[0].equals("extern") ? et : sbt, tokens[0].equals("extern"));
+            }
+        }
+    }
+
+    public void globalTable() {
+        for (Node i : e1) {
+            int addr = findST(i.identifier, s2);
+            if (addr != -1) gvt.add(new Node(i.identifier, i.dataType, i.size, addr));
+        }
+        for (Node i : e2) {
+            int addr = findST(i.identifier, s1);
+            if (addr != -1) gvt.add(new Node(i.identifier, i.dataType, i.size, addr));
+        }
+    }
+
+    public int findST(String identifier, List<Node> list) {
+        return list.stream().filter(i -> i.identifier.equals(identifier)).findFirst().map(i -> i.addr).orElse(-1);
+    }
+
+    public void display(List<Node> list) {
+        System.out.println("Var \ttype\tsize\taddress");
+        list.forEach(i -> System.out.println(i.identifier + "\t\t" + i.dataType + "     " + i.size + "\t\t" + i.addr));
+        System.out.println("\n");
+    }
+}
+
+public class ps7_linker {
+    public static void main(String[] args) throws FileNotFoundException {
+        File f1 = new File("test1.c");
+        File f2 = new File("test2.c");
+        Linker linker = new Linker();
+
+        linker.readFile(new Scanner(f1), true);
+        System.out.println("Symbol Table for file 1");
+        linker.display(linker.s1);
+        System.out.println("Extern Table for file 1");
+        linker.display(linker.e1);
+
+        linker.readFile(new Scanner(f2), false);
+        System.out.println("Symbol Table for file 2");
+        linker.display(linker.s2);
+        System.out.println("Extern Table for file 2");
+        linker.display(linker.e2);
+
+        linker.globalTable();
+        System.out.println("Global Table");
+        linker.display(linker.gvt);
+    }
+}
+
+
+test1.c
+#include<stdio.h>
+main()
+{
+extern int no1,no2,c[10];
+float f1,f2;
+char c1;
+int d1,d2;
+}
+}
+
+test2.c
+#include<stdio.h>
+main()
+{
+int no1,no2,c[10];
+extern float f1,f2;
+char c3;
+}
+}

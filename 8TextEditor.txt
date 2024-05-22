@@ -1,0 +1,91 @@
+import tkinter as tk
+from tkinter import filedialog, simpledialog
+
+def new_file():
+    text.delete('1.0', tk.END)  # Clear the text area
+
+def open_file():
+    file_path = filedialog.askopenfilename()  # Open file dialog
+    if file_path:  # If a file is selected
+        with open(file_path, 'r') as file:  # Open the file in read mode
+            text.delete('1.0', tk.END)  # Clear the text area
+            text.insert(tk.END, file.read())  # Insert the file content into the text area
+
+def save_file():
+    file_path = filedialog.asksaveasfilename(defaultextension=".txt")  # Save file dialog
+    if file_path:  # If a file path is given
+        with open(file_path, 'w') as file:  # Open the file in write mode
+            file.write(text.get('1.0', tk.END))  # Write the content of the text area to the file
+
+def copy_text():
+    text.clipboard_clear()  # Clear the clipboard
+    text.clipboard_append(text.selection_get())  # Copy selected text to clipboard
+
+def cut_text():
+    copy_text()  # Copy the selected text
+    text.delete('sel.first', 'sel.last')  # Delete the selected text
+
+def paste_text():
+    text.insert(tk.INSERT, text.clipboard_get())  # Paste text from clipboard
+
+def find_text():
+    target = simpledialog.askstring("Find", "Enter text to find:")  # Ask for the text to find
+    if target:  # If the user entered something
+        start_pos = '1.0'
+        while True:
+            start_pos = text.search(target, start_pos, stopindex=tk.END)  # Search for the text
+            if not start_pos:  # If not found, break
+                break
+            end_pos = f"{start_pos}+{len(target)}c"
+            text.tag_add('found', start_pos, end_pos)  # Highlight the found text
+            start_pos = end_pos
+        text.tag_config('found', background='yellow')  # Highlight configuration
+
+def replace_text():
+    target = simpledialog.askstring("Find", "Enter text to find:")  # Ask for the text to find
+    if target:
+        replace = simpledialog.askstring("Replace", "Enter text to replace with:")  # Ask for the replacement text
+        if replace:
+            start_pos = '1.0'
+            while True:
+                start_pos = text.search(target, start_pos, stopindex=tk.END)  # Search for the text
+                if not start_pos:  # If not found, break
+                    break
+                end_pos = f"{start_pos}+{len(target)}c"
+                text.delete(start_pos, end_pos)  # Delete the found text
+                text.insert(start_pos, replace)  # Insert the replacement text
+                start_pos = f"{start_pos}+{len(replace)}c"
+            text.tag_remove('found', '1.0', tk.END)  # Remove highlights
+
+# Main application window
+root = tk.Tk()
+root.title("Simple Text Editor")
+
+text = tk.Text(root, undo=True)  # Text area widget
+text.pack(expand=True, fill='both')  # Pack the text area
+
+# Create a menu bar
+menu_bar = tk.Menu(root)
+
+file_menu = tk.Menu(menu_bar, tearoff=0)
+file_menu.add_command(label="New", command=new_file)
+file_menu.add_command(label="Open", command=open_file)
+file_menu.add_command(label="Save", command=save_file)
+file_menu.add_separator()
+file_menu.add_command(label="Exit", command=root.quit)
+menu_bar.add_cascade(label="File", menu=file_menu)
+
+edit_menu = tk.Menu(menu_bar, tearoff=0)
+edit_menu.add_command(label="Copy", command=copy_text)
+edit_menu.add_command(label="Cut", command=cut_text)
+edit_menu.add_command(label="Paste", command=paste_text)
+edit_menu.add_separator()
+edit_menu.add_command(label="Find", command=find_text)
+edit_menu.add_command(label="Replace", command=replace_text)
+menu_bar.add_cascade(label="Edit", menu=edit_menu)
+
+# Configure the menu bar
+root.config(menu=menu_bar)
+
+# Run the application
+root.mainloop()

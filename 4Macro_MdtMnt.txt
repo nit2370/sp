@@ -1,0 +1,109 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+unordered_map<string, vector<string>> macros; // store macro definitions
+map<int, string> mdt;
+vector<vector<string>> mnt;
+
+void pass1(vector<string> &lines) // for processing macro definition and storing in MDT and MNT tables
+{
+    int mntIndex = 1;
+    int mdtIndex = 0;
+    bool inCodeSection = false;
+
+    // Storage in MNT and MDT tables
+    for (const string &line : lines)
+    {
+        // Check if the line contains "macro"
+        if (line.find("macro") != string::npos)
+        {
+            string name = line.substr(6); // Changed substr value to 6 to correctly extract macro name
+            vector<string> temp{to_string(mntIndex), name, to_string(mdtIndex)};
+            mnt.push_back(temp);
+            mntIndex++;
+        }
+        else if (line == ".code")
+        {
+            inCodeSection = true;
+        }
+        else if (line == "endp" && inCodeSection)
+        {
+            inCodeSection = false;
+        }
+        else if (!line.empty() && !inCodeSection)
+        {
+            // Store lines in MDT if not in the .code section
+            mdt[mdtIndex] = line;
+            mdtIndex++;
+        }
+    }
+
+    // Output MNT Table
+    cout << "\nMNT Table:\n";
+    cout << "index   | Name        | MDT index\n";
+    for (int i = 0; i < mnt.size(); ++i)
+    {
+        vector<string> &x = mnt[i];
+        cout << x[0] << "       | " << x[1] << "        | " << x[2] << endl;
+    }
+
+    // Output MDT Table
+    cout << "\nMDT Table:\n";
+    cout << "index   | card\n";
+    for (int i = 0; i < mdtIndex; i++)
+    {
+        cout << i << "       | " << mdt[i] << endl;
+    }
+}
+
+int main()
+{
+    ifstream file;
+    file.open("C:\\Users\\choud\\Desktop\\everything\\6th Sem\\SP\\LAB ASS\\Lab 2 and 3\\input.txt");
+
+    if (!file.is_open())
+    {
+        cerr << "Error opening file for reading!" << endl;
+        return 1;
+    }
+
+    vector<string> lines;
+    string line;
+
+    // Read file and store into vector
+    while (getline(file, line))
+    {
+        lines.push_back(line);
+    }
+
+    file.close();
+
+    pass1(lines);
+
+    return 0;
+}
+
+Input
+macro ABC
+load a
+sub h
+add b
+mend
+
+macro PQR
+sub b
+store d
+mend
+
+macro XYZ
+load l
+sub s
+store st
+mend
+
+.code
+PQR
+store m,p
+XYZ
+ABC
+endp

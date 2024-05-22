@@ -1,0 +1,218 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <unordered_map>
+#include <map>
+using namespace std;
+
+unordered_map<string, pair<vector<string>, vector<string>>> macros; // store macro definitions
+map<int, string> mdt;
+vector<vector<string>> mnt;
+
+void pass1(ifstream &file) // for processing macro definition and storing in mdt and mnt table
+{
+    int mntIndex = 1;
+    int mdtIndex = 0;
+    bool inCodeSection = false;
+
+    string line;
+    while (getline(file, line))
+    {
+        // Check if the line contains "macro"
+        if (line.find("macro") != string::npos)
+        {
+            string name;
+            if (line.size() >= 6)
+            {
+                name = line.substr(6);
+            }
+            else
+            {
+                cerr << "Error: Invalid macro definition." << endl;
+                return;
+            }
+            vector<string> parameters;
+            size_t pos = name.find("&");
+            if (pos != string::npos)
+            {
+                string parameters_str = name.substr(pos);
+                stringstream ss(parameters_str);
+                string parameter;
+                while (getline(ss, parameter, ','))
+                {
+                    parameters.push_back(parameter);
+                }
+                name = name.substr(0, pos - 1);
+            }
+            vector<string> temp{to_string(mntIndex), name, to_string(mdtIndex)};
+            mnt.push_back(temp);
+            mntIndex++;
+            vector<string> definition;
+            while (true)
+            {
+                if (!(getline(file, line)))
+                    break; // Ensure to check getline() for EOF
+                if (line == "mend")
+                {
+                    mdt[mdtIndex] = "mend"; // Store "mend" in MDT
+                    mdtIndex++;
+                    break;
+                }
+                definition.push_back(line);
+                mdt[mdtIndex] = line; // Store macro instruction in MDT
+                mdtIndex++;
+            }
+            macros[name] = make_pair(parameters, definition);
+        }
+        else if (line == ".code")
+        {
+            inCodeSection = true;
+        }
+        else if (line == "endp" && inCodeSection)
+        {
+            inCodeSection = false;
+        }
+        else if (!line.empty() && !inCodeSection)
+        {
+            // Store lines in MDT if not in the .code section
+            mdt[mdtIndex] = line;
+            mdtIndex++;
+        }
+    }
+
+    // Output MNT Table
+    cout << "\nMNT Table:\n";
+    cout << "index   | Name        | MDT index\n";
+    for (auto x : mnt)
+    {
+        cout << x[0] << "       | " << x[1] << "        | " << x[2] << endl;
+    }
+
+    // Output MDT Table
+    cout << "\nMDT Table:\n";
+    cout << "index   | card\n";
+    for (int i = 0; i < mdtIndex; i++)
+    {
+        cout << i << "       | " << mdt[i] << endl;
+    }
+}
+
+void pass2(vector<string> &lines) // for expanding macros and replacing their calls with definition
+{
+    cout << "\nExpanded Code is:\n";
+
+    bool insideMacroCalls = false;
+
+    // Iterate through the lines
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        string &currentLine = lines[i];
+
+        if (currentLine == ".code")
+        {
+            insideMacroCalls = true;
+        }
+        else if (currentLine == "endp")
+        {
+            insideMacroCalls = false;
+        }
+        else if (insideMacroCalls && currentLine != "mend") // Skip "mend" during expansion
+        {
+            bool expanded = false;
+            for (int i = 0; i < macros.size(); i++)
+            {
+                string macro_name = mnt[i][1];
+                size_t pos = currentLine.find(macro_name);
+                if (pos != string::npos)
+                {
+                    expanded = true;
+                    vector<string> parameters = macros[macro_name].first; // formal parameters stored
+                    vector<string> definition = macros[macro_name].second;
+                    vector<string> arguments; // for storing actual parameters
+                    if (parameters.size() > 0)
+                    {
+                        string arguments_str = currentLine.substr(pos + macro_name.size()); // stores actual parameters
+                        stringstream ss(arguments_str);
+                        string argument;
+                        while (getline(ss, argument, ','))
+                        {
+                            arguments.push_back(argument);
+                        }
+                    }
+                    for (int k = 0; k < definition.size(); k++)
+                    {
+                        string line = definition[k];
+                        for (int j = 0; j < parameters.size(); j++)
+                        {
+                            size_t arg_pos = line.find(parameters[j]);
+                            if (arg_pos != string::npos)
+                            {
+                                line.replace(arg_pos, parameters[j].size(), arguments[j]);
+                            }
+                        }
+                        cout << line << endl;
+                    }
+                }
+            }
+            if (!expanded)
+            {
+                cout << currentLine << endl;
+            }
+        }
+    }
+}
+
+int main()
+{
+    ifstream file("C:\\Users\\choud\\Desktop\\everything\\6th Sem\\SP\\LAB ASS\\Lab 2 and 3\\input_withargs.txt");
+
+    if (!file.is_open())
+    {
+        cerr << "Error opening file for reading!" << endl;
+        return 1;
+    }
+
+    pass1(file);
+
+    // Reset file pointer to the beginning for pass2
+    file.clear();
+    file.seekg(0, ios::beg);
+
+    vector<string> lines;
+    string line;
+    while (getline(file, line))
+    {
+        lines.push_back(line);
+    }
+
+    file.close();
+
+    pass2(lines);
+
+    return 0;
+}
+
+Input
+macro ABC &a,&h,&b
+load &a
+sub &h
+add &b
+mend
+
+macro PQR &b,&d
+sub &b
+store &d
+mend
+
+macro XYZ &l,&s,&o
+load &l
+sub &s
+mul &o
+mend
+
+.code
+PQR 2, 3
+XYZ 5, 6, 4
+ABC 8,9,10
+Endp

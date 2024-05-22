@@ -1,0 +1,102 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int checkDataType(string str, const vector<string> &Datatypes)
+{
+    for (int i = 0; i < Datatypes.size(); i++)
+    {
+        if (str == Datatypes[i])
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int main()
+{
+    string inputfile = "C:\\Users\\choud\\Desktop\\LabExam-main\\Lab_1\\InputCode.c";
+    ifstream fin;
+    fin.open(inputfile);
+    if (!fin.is_open())
+    {
+        cout << "File not found\n";
+        return 0;
+    }
+    
+    const vector<string> DataTypes{"char", "short", "int", "long", "float", "double"};
+    const vector<int> DataSize{1, 2, 4, 4, 4, 8};
+    string word;
+    int address = 100;
+    cout << "Symbol " << "Datatype " << "Size " << "Address\n";
+
+    fin.seekg(0);
+    while (fin >> word)
+    {
+        int ret = checkDataType(word , DataTypes);
+        if (ret != -1)
+        {
+            fin >> word;
+
+            string symbol;
+            for (int i = 0; i < word.size(); i++)
+            {
+                if (word[i] == ',')
+                {
+                    cout << symbol << "\t" << DataTypes[ret] << "\t " << DataSize[ret] << "\t" << address << endl;
+                    address = address + DataSize[ret];
+                    symbol = "";
+                }
+                else if (word[i] == '[')
+                {
+                    symbol += word[i++];
+                    int num = (int)(word[i]) - 48;
+                    symbol += word[i++];
+                    symbol += word[i++];
+
+                    cout << symbol << "\t" << DataTypes[ret] << "\t " << num * DataSize[ret] << "\t" << address << endl;
+                    address = address + DataSize[ret] * num;
+
+                    symbol = "";
+                    
+                }
+                else
+                {
+                    symbol += word[i];
+                }
+            }
+            if (symbol != "")
+            {
+                symbol.pop_back();
+                cout << symbol << "\t" << DataTypes[ret] << "\t " << DataSize[ret] << "\t" << address << endl;
+                address = address + DataSize[ret];
+            }
+        }
+    }
+    fin.close();
+
+    return 0;
+}
+
+InputCode.c
+#include<stdio.h>
+
+void main()
+{
+    char Alpha;
+
+    int height,width;
+    float area;
+    area = height * width;
+    
+    long side;
+    double sqArea;
+    sqArea = side * side;
+
+    char Str[5];
+    int arr[5],num[3];
+    double deci[4];
+
+    return;
+}
+

@@ -1,0 +1,122 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+map<int, string> mdt = {
+    {0, "load a"},
+    {1, "sub h"},
+    {2, "add b"},
+    {3, "mend"},
+    {4, "sub b"},
+    {5, "store d"},
+    {6, "mend"},
+    {7, "load l"},
+    {8, "sub s"},
+    {9, "store st"},
+    {10, "mend"}
+};
+
+vector<vector<string>> mnt = {
+    {"1", "ABC", "0"},
+    {"2", "PQR", "4"},
+    {"3", "XYZ", "7"}
+};
+
+unordered_map<string, vector<string>> macros = {
+    {"ABC", {mdt[0], mdt[1], mdt[2], mdt[3]}},
+    {"PQR", {mdt[4], mdt[5], mdt[6]}},
+    {"XYZ", {mdt[7], mdt[8], mdt[9], mdt[10]}}
+};
+
+void pass2(vector<string> &lines) //for expanding macros and replacing their calls with definition
+{
+    cout << "\nExpanded Code is:\n";
+
+    bool insideMacroCalls = false;
+
+    // Iterate through the lines
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        string &currentLine = lines[i];
+
+        if (currentLine == ".code")
+        {
+            insideMacroCalls = true;
+        }
+        else if (currentLine == "endp")
+        {
+            insideMacroCalls = false;
+        }
+        else if (insideMacroCalls)
+        {
+            if (macros.find(currentLine) != macros.end()) // if the current line is a macro call
+            {
+                vector<string> &currentMacroCode = macros[currentLine];
+                // Output the lines of the expanded macro
+                for (size_t j = 0; j < currentMacroCode.size(); ++j)
+                {
+                    if(currentMacroCode[j]!="mend"){
+                    cout << currentMacroCode[j] << endl;
+
+                    }
+                }
+            }
+            else // if not a macro call print statement as it is
+            {
+                cout << currentLine << endl;
+            }
+        }
+    }
+}
+
+int main()
+{
+    ifstream file;
+    file.open("C:\\Users\\choud\\Desktop\\everything\\6th Sem\\SP\\LAB ASS\\Lab 2 and 3\\input.txt");
+
+    if (!file.is_open())
+    {
+        cerr << "Error opening file for reading!" << endl;
+        return 1;
+    }
+
+    vector<string> lines;
+    string line;
+
+    //read file and store into vector
+    while (getline(file, line))
+    {
+        lines.push_back(line);
+    }
+
+    file.close();
+
+    pass2(lines);
+
+    return 0;
+}
+
+
+Input
+macro ABC
+load a
+sub h
+add b
+mend
+
+macro PQR
+sub b
+store d
+mend
+
+macro XYZ
+load l
+sub s
+store st
+mend
+
+.code
+PQR
+store m,p
+XYZ
+ABC
+endp

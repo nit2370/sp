@@ -1,0 +1,136 @@
+#include<iostream>
+#include<vector>
+#include<fstream>
+#include<sstream> 
+#include<unordered_map>
+using namespace std;
+
+class mainp {
+public:
+    int line;
+    string label;
+    string mneumonic;
+    string operand;
+    int lc; // location counter
+    string output;
+    mainp(int line, string label, string mneumonic, string operand, int lc, string output) {
+        this->line = line;
+        this->label = label;
+        this->mneumonic = mneumonic;
+        this->operand = operand;
+        this->lc = lc;
+        this->output = output;
+    }
+};
+
+vector<mainp> main_table;
+unordered_map<string, int> sym_table;
+int location_count = 0;
+int lineNumber = 1;
+
+void takeInput() {
+    fstream file;
+    file.open("C:\\Users\\choud\\Desktop\\everything\\6th Sem\\SP\\LAB ASS\\Lab 4\\input1.txt");
+    if (!file.is_open()) {
+        cerr << "Error opening file" << endl;
+    }
+    string line;
+
+    int ct = 2;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string token;
+        vector<string> components;
+        while (getline(ss, token, ' ')) {
+            components.push_back(token);
+        }
+        if (components.size() == 2) {
+            main_table.push_back(mainp(lineNumber, " ", components[0], components[1], location_count, ""));
+            location_count += ct;
+        }
+        else if (components.size() == 3) {
+            sym_table[components[0]] = location_count;
+            main_table.push_back(mainp(lineNumber, components[0], components[1], components[2], location_count, ""));
+            location_count += ct;
+        }
+        else if (components[0] == "stop") {
+            main_table.push_back(mainp(lineNumber, "", components[0], " ", location_count, ""));
+            ct = 1;
+            location_count += ct;
+        }
+        lineNumber++;
+    }
+}
+
+void printSym() {
+    cout << "Label" << "\t" << "Address"<< endl;
+    for (auto entry : sym_table) {
+        cout << entry.first << "\t" << entry.second << endl;
+    }
+}
+
+void printInputFile() {
+    cout << "Line" << "\t" << "Label" << "\t" << "Mnemonic" << "\t" << "Operand" << "\t" << "Location Counter" << endl;
+    for (const auto& entry : main_table) {
+        cout << entry.line << "\t" << entry.label << "\t" << entry.mneumonic << "\t\t" << entry.operand << "\t" << entry.lc << endl;
+    }
+}
+
+void firstpass() {
+    takeInput();
+    printSym();
+    printInputFile(); // Print the input file details along with the location counter
+}
+int main() {
+    firstpass();
+    return 0;
+}
+
+
+Mot
+ADD 1 1
+SUB 2 1
+MULT 3 1
+JMP 4 1
+JNEG 5 1
+JPOS 6 1
+JZ 7 1
+LOAD 8 1
+STORE 9 1
+READ 10 1
+WRITE 11 1
+STOP 12 0
+
+Pot
+DB 1
+DW 1
+ORG 1
+ENDP 0
+CONST 1
+END 0
+
+Input
+READ N
+LOAD ZERO
+STORE COUNT
+STORE SUM
+LOOP READ X
+LOAD X
+ADD SUM
+STORE SUM
+LOAD COUNT
+ADD ONE
+STORE COUNT
+SUB N
+JZ OUTER
+JMP LOOP
+OUTER WRITE SUM
+STOP
+ENDP
+ZERO CONST 0
+ONE CONST 1
+SUM DB 1
+COUNT DB 1
+N DB 1
+X DB 1
+END
